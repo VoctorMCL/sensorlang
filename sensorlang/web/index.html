@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SensorLang Studio — Compilador & IDE ESP32</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/vendor/three.min.js"></script>
+  <script src="/vendor/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- BARRA DE HERRAMIENTAS SUPERIOR -->
+  <header id="top-nav">
+    <div class="nav-brand">
+      <span class="brand-glyph">⬡</span>
+      <span class="brand-name">SensorLang</span>
+      <span class="brand-divider">/</span>
+      <span class="brand-tag">ESP32 Studio</span>
+    </div>
+
+    <div class="nav-center-actions">
+      <button class="nav-btn btn-compile" id="btn-compilar" title="Compilar sketch (Ctrl + Enter)">
+        <span class="btn-indicator"></span>
+        <span class="btn-label">Compilar</span>
+        <span class="btn-kbd">^Enter</span>
+      </button>
+
+      <button class="nav-btn btn-flash-wifi" id="btn-flashear-wifi" title="Subir firmware inalámbrico por WiFi (OTA)">
+        <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+        <span class="btn-label">Flash WiFi (OTA)</span>
+      </button>
+
+      <button class="nav-btn btn-flash-usb" id="btn-flashear-usb" title="Subir firmware vía cable USB serie">
+        <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span class="btn-label">Flash USB</span>
+      </button>
+    </div>
+
+    <div class="nav-right-status">
+      <div class="device-pill" id="device-pill">
+        <span class="pill-dot" id="pill-dot"></span>
+        <span class="pill-text" id="pill-text">Buscando ESP32...</span>
+      </div>
+      <div class="server-pill">
+        <span class="server-host">localhost</span>
+        <span class="server-port">:5000</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR DE PANELES REDIMENSIONABLES -->
+  <main id="app-workspace">
+    <!-- 1. PANEL IZQUIERDO: CONFIGURACIÓN Y PROYECTO -->
+    <aside id="sidebar-left" style="width: 260px;">
+      <div class="panel-header">
+        <span class="panel-title">Entorno & Dispositivo</span>
+      </div>
+
+      <div class="sidebar-scroll">
+        <div class="form-group">
+          <label class="field-label" for="select-ejemplos">Sketch / Ejemplo:</label>
+          <select id="select-ejemplos" class="ui-select">
+            <option value="">-- Cargar Ejemplo --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div class="group-header">
+            <span class="group-title">Conexión Inalámbrica (OTA)</span>
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="input-ssid">SSID WiFi:</label>
+            <input type="text" id="input-ssid" class="ui-input" value="SensorLang-ESP32" spellcheck="false">
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="input-pass">Clave WiFi:</label>
+            <input type="password" id="input-pass" class="ui-input" value="12345678" spellcheck="false">
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="input-ip">IP ESP32:</label>
+            <input type="text" id="input-ip" class="ui-input" value="192.168.4.1" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="group-header">
+            <span class="group-title">Puerto Serie USB</span>
+            <button id="btn-refresh-puertos" class="ui-btn-icon" title="Escanear puertos USB">↻</button>
+          </div>
+          <select id="select-puerto" class="ui-select">
+            <option value="">Detectando puertos...</option>
+          </select>
+          <div id="puerto-details" class="device-hint">Escaneando bus serie...</div>
+        </div>
+
+        <div class="form-group shortcuts-card">
+          <div class="group-title">Atajos</div>
+          <div class="shortcut-item"><span>Compilar</span><code>Ctrl + Enter</code></div>
+          <div class="shortcut-item"><span>Guardar</span><code>Ctrl + S</code></div>
+          <div class="shortcut-item"><span>Indentación</span><code>Tab (4 espacios)</code></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- DIVISOR IZQUIERDO ARRASTRABLE (SPLITTER X) -->
+    <div class="resizer resizer-x" id="resizer-left" title="Arrastra para redimensionar el panel izquierdo"></div>
+
+    <!-- 2. PANEL CENTRAL: EDITOR DE CÓDIGO -->
+    <section id="editor-section">
+      <div class="editor-tab-bar">
+        <div class="tab-pill active">
+          <span class="file-icon">⟨/⟩</span>
+          <span class="file-name">sketch_sensor.sl</span>
+        </div>
+        <div class="editor-tab-actions">
+          <button id="btn-limpiar-codigo" class="ui-btn-action" title="Limpiar código">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="editor-container">
+        <div class="line-gutter" id="line-numbers">1</div>
+        <textarea id="code-editor" spellcheck="false" placeholder="// Código fuente SensorLang para ESP32
+pin led = 2;
+pin sensor = A1;
+
+temp = leer_analogo(sensor);
+mostrar(temp);
+
+si (temp > 600) {
+    encender(led);
+    alerta('Temperatura sobre límite');
+} sino {
+    apagar(led);
+}
+
+esperar(400);"></textarea>
+      </div>
+
+      <div class="editor-status-bar">
+        <span id="editor-cursor-pos">Ln 1, Col 1</span>
+        <span id="editor-length">0 caracteres</span>
+        <span class="status-target">Target: ESP32 (38-pin / 30-row breadboard)</span>
+      </div>
+    </section>
+
+    <!-- DIVISOR DERECHO ARRASTRABLE (SPLITTER X) -->
+    <div class="resizer resizer-x" id="resizer-right" title="Arrastra para redimensionar el panel 3D / pestañas"></div>
+
+    <!-- 3. PANEL DERECHO: PESTAÑAS (3D, TELEMETRÍA, C++, GUÍA) -->
+    <section id="right-panel" style="width: 480px;">
+      <nav class="sub-nav-tabs">
+        <button class="sub-tab-btn active" data-tab="tab-3d">
+          <span class="tab-tag">3D</span> Protoboard
+        </button>
+        <button class="sub-tab-btn" data-tab="tab-telemetria">
+          <span class="tab-tag">Live</span> Telemetría
+        </button>
+        <button class="sub-tab-btn" data-tab="tab-cpp">
+          <span class="tab-tag">C++</span> Generado
+        </button>
+        <button class="sub-tab-btn" data-tab="tab-guia">
+          <span class="tab-tag">Info</span> Guía Pines
+        </button>
+      </nav>
+
+      <!-- TAB 1: MODELO 3D CON THREE.JS (TOTALMENTE SÓLIDO POR DEBAJO) -->
+      <div class="sub-tab-content active" id="tab-3d">
+        <div class="viewer-controls-bar">
+          <div class="sensor-pill-toggle">
+            <span class="toggle-label">Sensor:</span>
+            <button class="toggle-btn active" id="btn-toggle-dht">DHT11 (Temp/Hum)</button>
+            <button class="toggle-btn" id="btn-toggle-mq">MQ (Aire/Gas)</button>
+          </div>
+          <div class="camera-actions">
+            <button class="cam-btn" id="btn-3d-flip" title="Girar placa 180°">Girar 180°</button>
+            <button class="cam-btn" id="btn-3d-reset" title="Restablecer cámara">Centrar</button>
+            <button class="cam-btn" id="btn-3d-top" title="Vista superior plana">2D</button>
+          </div>
+        </div>
+
+        <div class="webgl-canvas-container" id="three-container">
+          <div class="three-hud-corner">
+            <div class="hud-corner-item"><b>Top-Left:</b> Fila 30a</div>
+            <div class="hud-corner-item"><b>Bottom-Right:</b> Fila 1j</div>
+          </div>
+          <div class="three-orbit-hint">Click & Arrastra: Rotar 360° | Rueda: Zoom | Click derecho: Desplazar</div>
+        </div>
+
+        <div class="steps-checklist">
+          <div class="checklist-header">
+            <span class="chk-hdr-title">Inspección de Conexión</span>
+            <span class="chk-hdr-hint">Clic en un componente para aislarlo en 3D</span>
+          </div>
+          <div class="step-card" data-step="led">
+            <div class="step-row"><span class="step-badge badge-red">LED 5mm</span> <span class="step-loc">Filas 5c (+) y 6c (-)</span></div>
+            <div class="step-notes">Ánodo largo en 5c, cátodo plano en 6c.</div>
+          </div>
+          <div class="step-card" data-step="resistor">
+            <div class="step-row"><span class="step-badge badge-amber">Resistencia 220Ω</span> <span class="step-loc">Filas 6d y 8d</span></div>
+            <div class="step-notes">Pata 1 en 6d (unida al cátodo), pata 2 en 8d (GND).</div>
+          </div>
+          <div class="step-card" data-step="sensor">
+            <div class="step-row"><span class="step-badge badge-blue">Sensor 4 Pines</span> <span class="step-loc">Filas 20c a 23c</span></div>
+            <div class="step-notes" id="desc-sensor-step">20c: VCC | 21c: DATA | 22c: NC vacío | 23c: GND</div>
+          </div>
+          <div class="step-card" data-step="esp32">
+            <div class="step-row"><span class="step-badge badge-cyan">ESP32 DevKit</span> <span class="step-loc">En mesa frente a la proto</span></div>
+            <div class="step-notes">Pines 3V3, GND, VN (A1) y D2 (GPIO 2).</div>
+          </div>
+          <div class="step-card" data-step="cables">
+            <div class="step-row"><span class="step-badge badge-green">Cables Jumpers</span> <span class="step-loc">5 líneas de interconexión</span></div>
+            <div class="step-notes" id="desc-cables-step">D2 → 5b | GND → 8b | 3V3 → 20b | VN → 21b | GND → 23b</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: TELEMETRÍA EN VIVO -->
+      <div class="sub-tab-content" id="tab-telemetria">
+        <div class="telemetry-bar">
+          <div class="telem-origin">
+            <label class="radio-label"><input type="radio" name="telem-src" value="wifi" checked> WiFi (OTA)</label>
+            <label class="radio-label"><input type="radio" name="telem-src" value="usb"> USB Serial</label>
+          </div>
+          <button class="ui-btn-action btn-telem-run" id="btn-toggle-telemetria">▶ Iniciar Monitoreo</button>
+        </div>
+
+        <div class="telemetry-cards">
+          <div class="telem-metric">
+            <div class="metric-label">Valor del Sensor</div>
+            <div class="metric-value" id="telem-val">--</div>
+            <div class="metric-sub" id="telem-sub">Sin flujo activo</div>
+          </div>
+          <div class="telem-metric">
+            <div class="metric-label">Estado Lógico</div>
+            <div class="metric-state state-normal" id="telem-state">STANDBY</div>
+            <div class="metric-sub" id="telem-uptime">Uptime: --</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-title-row">
+            <span>Traza Temporal Analógica</span>
+            <button class="ui-btn-action" id="btn-clear-chart">Vaciar</button>
+          </div>
+          <canvas id="chart-canvas" width="460" height="190"></canvas>
+        </div>
+      </div>
+
+      <!-- TAB 3: CÓDIGO C++ GENERADO -->
+      <div class="sub-tab-content" id="tab-cpp">
+        <div class="cpp-bar">
+          <span class="cpp-info">Sketch C++ nativo para ESP32 (Arduino-compatible)</span>
+          <button class="ui-btn-action" id="btn-copy-cpp">Copiar C++</button>
+        </div>
+        <pre class="cpp-source-block" id="cpp-code-view">// Presiona 'Compilar' para generar el código C++...</pre>
+      </div>
+
+      <!-- TAB 4: GUÍA TÉCNICA DE PINES -->
+      <div class="sub-tab-content" id="tab-guia">
+        <div class="guide-wrapper">
+          <div class="guide-header-box">
+            <h4>Mapeo de Filas (Protoboard 30 Columnas)</h4>
+            <p>La placa cuenta con 30 filas numeradas horizontalmente con orientación espejo:</p>
+          </div>
+
+          <div class="coords-box">
+            <div class="coord-item"><b>Arriba-Izquierda:</b> <code>Fila 30a</code></div>
+            <div class="coord-item"><b>Arriba-Derecha:</b> <code>Fila 1a</code></div>
+            <div class="coord-item"><b>Abajo-Izquierda:</b> <code>Fila 30j</code></div>
+            <div class="coord-item"><b>Abajo-Derecha:</b> <code>Fila 1j</code></div>
+          </div>
+
+          <div class="safety-box">
+            <h5>Prevención de Sobrecorriente / Bucle Brownout</h5>
+            <p>El regulador AMS1117 se sobrecalienta si ambas patas de la resistencia de 220 Ω se insertan en la misma fila (ej. ambas en la fila 6). La resistencia queda anulada en corto circuito y el ESP32 se reinicia infinitamente.</p>
+            <p class="rule-highlight">Regla: Pata 1 en <b>6d</b> y Pata 2 en <b>8d</b>.</p>
+          </div>
+
+          <table class="guide-table">
+            <thead>
+              <tr><th>Orificio</th><th>Componente</th><th>Destino en ESP32</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>5b / 5c</code></td><td>Ánodo LED (+)</td><td>Pin D2 (GPIO 2)</td></tr>
+              <tr><td><code>6c / 6d</code></td><td>Cátodo (-) y Pata 1 R220</td><td>Unión interna en fila 6</td></tr>
+              <tr><td><code>8b / 8d</code></td><td>Pata 2 R220 (Tierra)</td><td>Pin GND</td></tr>
+              <tr><td><code>20b / 20c</code></td><td>VCC (DHT) / AO (MQ)</td><td>Pin 3V3 o Pin VN (A1)</td></tr>
+              <tr><td><code>21b / 21c</code></td><td>DATA (DHT) / DO (MQ)</td><td>Pin VN (A1) o Libre</td></tr>
+              <tr><td><code>22b / 22c</code></td><td>NC vacío / GND (MQ)</td><td>Libre o Pin GND</td></tr>
+              <tr><td><code>23b / 23c</code></td><td>GND (DHT) / VCC (MQ)</td><td>Pin GND o Pin 3V3/VIN</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- DIVISOR INFERIOR ARRASTRABLE (SPLITTER Y) -->
+  <div class="resizer resizer-y" id="resizer-bottom" title="Arrastra para redimensionar la consola"></div>
+
+  <!-- CONSOLA INFERIOR -->
+  <footer id="bottom-console" style="height: 130px;">
+    <div class="console-bar">
+      <div class="console-left">
+        <span class="console-prompt">❯</span>
+        <span class="console-label">Consola de Salida & Compilador</span>
+        <span class="console-status-pill" id="console-status">Ready</span>
+      </div>
+      <div class="console-right">
+        <button class="ui-btn-action" id="btn-limpiar-consola">Limpiar</button>
+      </div>
+    </div>
+    <div class="console-terminal" id="console-output">
+      <div class="term-line term-info">[SensorLang Studio Web — Servidor activo en localhost]</div>
+      <div class="term-line term-ok">[Plataforma lista para compilación y subida OTA]</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

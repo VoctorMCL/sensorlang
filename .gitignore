@@ -1,0 +1,44 @@
+# Entornos y artefactos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv/
+
+# Binarios y compilaciones de microcontroladores (arduino-cli)
+salida_compilador/build/
+salida_compilador/*.bin
+salida_compilador/*.elf
+salida_compilador/*.map
+salida_compilador/*.bootloader.bin
+salida_compilador/*.partitions.bin
+salida_compilador/*.merged.bin
+
+# IDEs y editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
