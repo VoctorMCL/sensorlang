@@ -8,9 +8,9 @@
 
 La documentación completa del proyecto se encuentra organizada en el directorio [`docs/`](docs/):
 
-* 📐 **[Guía de Armado en Protoboard (docs/guia_protoboard.md)](docs/guia_protoboard.md):** Mapa orificio por orificio para protoboards de 30 filas, conexionado de sensores de 4 pines (DHT11 y MQ), actuador LED y prevención de cortos en bucles de brownout.
-* 🔌 **[Guía de Conexión y Flasheo del ESP32 (docs/guia_conexion_esp32.md)](docs/guia_conexion_esp32.md):** Procedimiento de primer flasheo USB, detección de puertos, modo Punto de Acceso (AP), cliente WiFi y subida OTA.
-* 🏛️ **[Arquitectura del Compilador (docs/arquitectura.md)](docs/arquitectura.md):** Descripción interna del pipeline (Lexer, Parser, AST, Generador C++), servidor web y motor 3D en Three.js.
+- 📐 **[Guía de Armado en Protoboard (docs/guia_protoboard.md)](docs/guia_protoboard.md):** Mapa orificio por orificio para protoboards de 30 filas, conexionado de sensores de 4 pines (DHT11 y MQ), actuador LED y prevención de cortos en bucles de brownout.
+- 🔌 **[Guía de Conexión y Flasheo del ESP32 (docs/guia_conexion_esp32.md)](docs/guia_conexion_esp32.md):** Procedimiento de primer flasheo USB, detección de puertos, modo Punto de Acceso (AP), cliente WiFi y subida OTA.
+- 🏛️ **[Arquitectura del Compilador (docs/arquitectura.md)](docs/arquitectura.md):** Descripción interna del pipeline (Lexer, Parser, AST, Generador C++), servidor web y motor 3D en Three.js.
 
 ---
 
@@ -101,27 +101,28 @@ esperar(400);
 sensorlang/
 ├── docs/                        # Documentación técnica y guías de hardware
 │   ├── arquitectura.md          # Arquitectura del compilador y sistema web
+│   ├── entrega2.md              # Versión Markdown del informe de entrega 2
 │   ├── guia_conexion_esp32.md   # Guía de conexión, drivers y red WiFi
 │   └── guia_protoboard.md       # Mapa orificio por orificio en protoboard
 ├── ejemplos/                    # Sketches de ejemplo en sintaxis SensorLang
 │   ├── alerta_temperatura.sl
 │   ├── parpadeo_wifi.sl
 │   └── prender_led.sl
+├── pruebas/                     # Casos de prueba del compilador
+│   ├── validos/                 # Programas válidos de prueba
+│   └── errores/                 # Casos de errores léxicos y sintácticos
 ├── sensorlang/                  # Paquete principal de Python
 │   ├── __init__.py              # Exportaciones públicas de la API
-│   ├── __main__.py              # Punto de entrada CLI y despachador
+│   ├── __main__.py              # Punto de entrada CLI con opciones --tokens, --arbol, --ast y --todo
 │   ├── esp32_tools.py           # Herramientas de hardware, USB y arduino-cli
-│   ├── generador.py             # Generador de C++ para ESP32
-│   ├── lexer.py                 # Analizador léxico
-│   ├── parser.py                # Analizador sintáctico
+│   ├── generador.py             # Traducción del AST a C++ para ESP32
+│   ├── lexer.py                 # Tokens, patrones regulares, comentarios y errores léxicos
+│   ├── parser.py                # Parser recursivo, árbol sintáctico (NodoArbol), expresiones y AST
 │   ├── visualizador_3d.py       # Visor de soporte de escritorio (Tkinter)
-│   ├── web_server.py            # Servidor HTTP local multi-hilo
+│   ├── web_server.py            # API /api/compilar (ahora devuelve tokens y árbol) y servidor local
 │   └── web/                     # Frontend del Web Studio
-│       ├── app.js               # Lógica del cliente, splitters y Three.js
-│       ├── index.html           # Estructura del IDE Web
-│       ├── style.css            # Estilos técnicos (Dark / Monospace)
-│       └── vendor/              # Three.js y OrbitControls (100% offline)
 ├── tests/                       # Suite de pruebas unitarias e integración
+│   ├── test_entrega2.py         # Pruebas de lexer, parser, árbol, AST y expresiones
 │   ├── test_sensorlang.py
 │   └── test_web_server.py
 ├── .gitignore                   # Exclusión de artefactos de compilación
@@ -130,9 +131,26 @@ sensorlang/
 
 ---
 
-## 🧪 Pruebas Automatizadas
+## 🧪 Pruebas Automatizadas y Ejecución
 
-Para ejecutar la suite completa de pruebas unitarias y de integración:
+**Requisito:** Python 3.10 o superior (solo biblioteca estándar).
+
+Para inspeccionar el flujo completo de un programa (Tokens, Árbol y AST):
+```bash
+python3 -m sensorlang pruebas/validos/control_invernadero.sl --todo
+```
+
+Para compilar un sketch a C++ para el ESP32:
+```bash
+python3 -m sensorlang ejemplos/alerta_temperatura.sl
+```
+
+Para ejecutar las pruebas específicas de la etapa de análisis (Lexer, Parser y AST):
+```bash
+python3 -m unittest tests.test_entrega2 -v
+```
+
+Para ejecutar la suite completa de pruebas unitarias y de integración del proyecto:
 ```bash
 python3 -m unittest discover tests
 ```
